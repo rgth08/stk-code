@@ -65,23 +65,27 @@ jobs:
           ln -sf $ANDROID_HOME $PWD/android-sdk
           ln -sf $ANDROID_HOME/ndk $PWD/android-ndk
 
-      - name: Patch make_deps.sh (curl libpsl + libjpeg SIMD)
+      - name: Patch make_deps.sh
         working-directory: stk-code/android
         run: |
           # Parche 1: curl sin libpsl
           sed -i 's/-DCURL_CA_PATH=none/-DCURL_CA_PATH=none -DCURL_USE_LIBPSL=OFF/' make_deps.sh
           # Parche 2: libjpeg sin SIMD NEON
           sed -i 's|-fpic -O3 -g" &&|-fpic -O3 -g" -DWITH_SIMD=OFF \&\&|' make_deps.sh
-          echo "=== Verificación de parches ==="
+          # Parche 3: pre-crear stamp de shaderc para saltarlo
+          mkdir -p deps-armeabi-v7a
+          touch deps-armeabi-v7a/shaderc.stamp
+          echo "=== Verificación ==="
           grep -n "LIBPSL" make_deps.sh
           grep -n "WITH_SIMD" make_deps.sh
+          ls -la deps-armeabi-v7a/shaderc.stamp
 
       - name: Cache compiled dependencies
         id: cache-deps
         uses: actions/cache@v4
         with:
           path: stk-code/android/deps-armeabi-v7a
-          key: stk-deps-armv7-v3-${{ hashFiles('stk-code/lib/**') }}
+          key: stk-deps-armv7-v4-${{ hashFiles('stk-code/lib/**') }}
 
       - name: Compile dependencies for ARMv7
         if: steps.cache-deps.outputs.cache-hit != 'true'
