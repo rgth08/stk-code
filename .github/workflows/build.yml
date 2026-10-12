@@ -61,7 +61,7 @@ jobs:
         working-directory: stk-code/android
         run: |
           ln -sf $ANDROID_HOME $PWD/android-sdk
-          ln -sf $ANDROID_HOME/ndk/28.1.13356709 $PWD/android-ndk
+          ln -sf $ANDROID_HOME/ndk $PWD/android-ndk
 
       - name: Generate assets
         working-directory: stk-code/android
