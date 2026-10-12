@@ -10,12 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: android-actions/setup-android@v3
-      
-      - name: Install NDK
-        run: sdkmanager "ndk;23.2.8568313"
-      
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK manual
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mkdir -p latest
+          mv cmdline-tools/* latest/ 2>/dev/null || true
+          mv bin lib NOTICE.txt source.properties latest/ 2>/dev/null || true
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+      - name: Install NDK r23b
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "ndk;23.2.8568313"
+
       - name: Build with CMake + GLES2
         run: |
           mkdir build && cd build
@@ -24,14 +43,9 @@ jobs:
             -DANDROID_ABI=armeabi-v7a \
             -DANDROID_PLATFORM=android-26
           make -j4
-      
-      - name: Find APK
-        run: find . -name "*.apk"
-      
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: stk-apk-gles2
-          path: |
-            build/**/*.apk
-            android/**/*.apk
+          path: build/**/*.apk
