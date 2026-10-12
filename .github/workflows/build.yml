@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: stk-code
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -45,39 +47,39 @@ jobs:
           sdkmanager "ndk;28.1.13356709" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Download STK dependencies
+        working-directory: stk-code/lib
         run: |
-          cd lib
           wget -q https://github.com/supertuxkart/dependencies/releases/download/preview/dependencies-android-src.tar.xz
           tar -xf dependencies-android-src.tar.xz
           rm dependencies-android-src.tar.xz
 
-      - name: Create symlinks
-        run: |
-          cd android
-          ln -sf $ANDROID_HOME $PWD/android-sdk
-          ln -sf $ANDROID_HOME/ndk/28.1.13356709 $PWD/android-ndk
-
-      - name: Download STK assets
+      - name: Download STK assets (as sibling)
         run: |
           svn checkout https://svn.code.sf.net/p/supertuxkart/code/stk-assets stk-assets
 
-      - name: Generate assets
+      - name: Create symlinks
+        working-directory: stk-code/android
         run: |
-          cd android
+          ln -sf $ANDROID_HOME $PWD/android-sdk
+          ln -sf $ANDROID_HOME/ndk/28.1.13356709 $PWD/android-ndk
+
+      - name: Generate assets
+        working-directory: stk-code/android
+        run: |
           chmod +x generate_assets.sh
           ./generate_assets.sh
 
       - name: Build APK
+        working-directory: stk-code/android
         run: |
-          cd android
           chmod +x make.sh
           ./make.sh -j4
 
       - name: Find APK
-        run: find android -name "*.apk" -type f
+        run: find . -name "*.apk" -type f
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: stk-apk-armv7
-          path: android/**/*.apk
+          path: '**/*.apk'
