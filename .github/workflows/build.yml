@@ -1,4 +1,4 @@
-name: Build STK ARMv7 OpenGL ES 2.0
+name: Build STK ARMv7
 
 on:
   push:
@@ -17,6 +17,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake meson ninja-build \
+            python3 python3-pip python3-mako python3-packaging \
+            flex bison autoconf automake libtool pkg-config \
+            imagemagick pngquant advancecomp libjpeg-progs optipng \
+            vorbis-tools subversion wget unzip
+
       - name: Setup Android SDK manual
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
@@ -30,38 +39,45 @@ jobs:
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-      - name: Install NDK r23b
+      - name: Install NDK 28.1.13356709
         run: |
           yes | sdkmanager --licenses
-          sdkmanager "ndk;23.2.8568313"
+          sdkmanager "ndk;28.1.13356709" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Install build deps
+      - name: Download STK dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake libcurl4-openssl-dev \
-            libssl-dev libpng-dev libjpeg-dev libfreetype6-dev \
-            libharfbuzz-dev libvorbis-dev libopenal-dev \
-            libsdl2-dev libbluetooth-dev pkg-config
+          cd lib
+          wget -q https://github.com/supertuxkart/dependencies/releases/download/preview/dependencies-android-src.tar.xz
+          tar -xf dependencies-android-src.tar.xz
+          rm dependencies-android-src.tar.xz
 
-      - name: Build STK for Android with make.sh
-        env:
-          ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/23.2.8568313
+      - name: Create symlinks
         run: |
+          cd android
+          ln -sf $ANDROID_HOME $PWD/android-sdk
+          ln -sf $ANDROID_HOME/ndk/28.1.13356709 $PWD/android-ndk
+
+      - name: Download STK assets
+        run: |
+          svn checkout https://svn.code.sf.net/p/supertuxkart/code/stk-assets stk-assets
+
+      - name: Generate assets
+        run: |
+          cd android
+          chmod +x generate_assets.sh
+          ./generate_assets.sh
+
+      - name: Build APK
+        run: |
+          cd android
           chmod +x make.sh
-          ./make.sh -j4 \
-            -DUSE_GLES2=1 \
-            -DNO_SHADERC=ON \
-            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/23.2.8568313/build/cmake/android.toolchain.cmake \
-            -DANDROID_ABI=armeabi-v7a \
-            -DANDROID_PLATFORM=android-26 \
-            -DCMAKE_BUILD_TYPE=Release
+          ./make.sh -j4
 
       - name: Find APK
-        run: find . -name "*.apk" -type f
+        run: find android -name "*.apk" -type f
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: stk-apk-gles2
-          path: |
-            **/*.apk
+          name: stk-apk-armv7
+          path: android/**/*.apk
