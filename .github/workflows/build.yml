@@ -35,18 +35,33 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "ndk;23.2.8568313"
 
-      - name: Build with CMake + GLES2
+      - name: Install build deps
         run: |
-          mkdir build && cd build
-          cmake .. -DUSE_GLES2=1 -DNO_SHADERC=ON -DSERVER_ONLY=OFF \
-            -DCMAKE_BUILD_TYPE=Release \
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libcurl4-openssl-dev \
+            libssl-dev libpng-dev libjpeg-dev libfreetype6-dev \
+            libharfbuzz-dev libvorbis-dev libopenal-dev \
+            libsdl2-dev libbluetooth-dev pkg-config
+
+      - name: Build STK for Android with make.sh
+        env:
+          ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/23.2.8568313
+        run: |
+          chmod +x make.sh
+          ./make.sh -j4 \
+            -DUSE_GLES2=1 \
+            -DNO_SHADERC=ON \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/23.2.8568313/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=armeabi-v7a \
-            -DANDROID_PLATFORM=android-26
-          make -j4
+            -DANDROID_PLATFORM=android-26 \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Find APK
+        run: find . -name "*.apk" -type f
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: stk-apk-gles2
-          path: build/**/*.apk
+          path: |
+            **/*.apk
