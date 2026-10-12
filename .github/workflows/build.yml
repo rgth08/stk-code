@@ -38,7 +38,8 @@ jobs:
       - name: Build with CMake + GLES2
         run: |
           mkdir build && cd build
-          cmake .. -DUSE_GLES2=1 -DCMAKE_BUILD_TYPE=Release \
+          cmake .. -DUSE_GLES2=1 -DNO_SHADERC=ON -DSERVER_ONLY=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/23.2.8568313/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=armeabi-v7a \
             -DANDROID_PLATFORM=android-26
