@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      COMPILE_ARCH: armv7
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,7 +48,7 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "ndk;28.1.13356709" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Download STK dependencies
+      - name: Download STK dependencies sources
         working-directory: stk-code/lib
         run: |
           wget -q https://github.com/supertuxkart/dependencies/releases/download/preview/dependencies-android-src.tar.xz
@@ -63,13 +65,27 @@ jobs:
           ln -sf $ANDROID_HOME $PWD/android-sdk
           ln -sf $ANDROID_HOME/ndk $PWD/android-ndk
 
+      - name: Cache compiled dependencies
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: stk-code/android/deps-armeabi-v7a
+          key: stk-deps-armv7-${{ hashFiles('stk-code/lib/**') }}
+
+      - name: Compile dependencies for ARMv7
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        working-directory: stk-code/android
+        run: |
+          chmod +x make_deps.sh
+          ./make_deps.sh -j4
+
       - name: Generate assets
         working-directory: stk-code/android
         run: |
           chmod +x generate_assets.sh
           ./generate_assets.sh
 
-      - name: Build APK
+      - name: Build APK for ARMv7
         working-directory: stk-code/android
         run: |
           chmod +x make.sh
