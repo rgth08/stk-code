@@ -1,0 +1,37 @@
+name: Build STK ARMv7 OpenGL ES 2.0
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: android-actions/setup-android@v3
+      
+      - name: Install NDK
+        run: sdkmanager "ndk;23.2.8568313"
+      
+      - name: Build with CMake + GLES2
+        run: |
+          mkdir build && cd build
+          cmake .. -DUSE_GLES2=1 -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/23.2.8568313/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=armeabi-v7a \
+            -DANDROID_PLATFORM=android-26
+          make -j4
+      
+      - name: Find APK
+        run: find . -name "*.apk"
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: stk-apk-gles2
+          path: |
+            build/**/*.apk
+            android/**/*.apk
