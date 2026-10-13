@@ -631,7 +631,7 @@ void ShaderBasedRenderer::onLoadWorld()
     unsigned int height = viewport.LowerRightCorner.Y - viewport.UpperLeftCorner.Y;
 
     RTT* rtts = new RTT(width, height, CVS->isDeferredEnabled() ?
-                        UserConfigParams::m_scale_rtts_factor : 1.0f,
+                        0.3f : 1.0f, // FORCED
                         !CVS->isDeferredEnabled());
     setRTT(rtts);
 }

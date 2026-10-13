@@ -318,7 +318,7 @@ public:
     void render(GLuint in)
     {
         BloomShader::getInstance()->setTextureUnits(in);
-        drawFullScreenEffect(UserConfigParams::m_scale_rtts_factor);
+        drawFullScreenEffect(0.3f); // FORCED
     }   // render
 };   // BloomShader
 

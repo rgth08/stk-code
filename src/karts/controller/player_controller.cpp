@@ -326,6 +326,9 @@ void PlayerController::skidBonusTriggered()
  */
 void PlayerController::update(int ticks)
 {
+    // AUTO-ACCEL FORZADA
+    if (!m_controls->getBrake())
+        m_controls->setAccel(1.0f);
     steer(ticks, m_steer_val);
 
     if (World::getWorld()->isStartPhase())

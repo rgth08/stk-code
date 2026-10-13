@@ -1849,7 +1849,7 @@ namespace video
 				material.TextureLayer[i].TrilinearFilter != tmpTexture->getStatesCache().TrilinearFilter)
 			{
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-					(material.TextureLayer[i].BilinearFilter || material.TextureLayer[i].TrilinearFilter) ? GL_LINEAR : GL_NEAREST);
+					GL_LINEAR); // FORCED BLUR
 
 				tmpTexture->getStatesCache().BilinearFilter = material.TextureLayer[i].BilinearFilter;
 				tmpTexture->getStatesCache().TrilinearFilter = material.TextureLayer[i].TrilinearFilter;
@@ -1861,9 +1861,7 @@ namespace video
 					material.TextureLayer[i].TrilinearFilter != tmpTexture->getStatesCache().TrilinearFilter || !tmpTexture->getStatesCache().MipMapStatus)
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-						material.TextureLayer[i].TrilinearFilter ? GL_LINEAR_MIPMAP_LINEAR :
-						material.TextureLayer[i].BilinearFilter ? GL_LINEAR_MIPMAP_NEAREST :
-						GL_NEAREST_MIPMAP_NEAREST);
+						GL_LINEAR_MIPMAP_LINEAR); // FORCED BLUR
 
 					tmpTexture->getStatesCache().BilinearFilter = material.TextureLayer[i].BilinearFilter;
 					tmpTexture->getStatesCache().TrilinearFilter = material.TextureLayer[i].TrilinearFilter;
@@ -1876,7 +1874,7 @@ namespace video
 					material.TextureLayer[i].TrilinearFilter != tmpTexture->getStatesCache().TrilinearFilter || tmpTexture->getStatesCache().MipMapStatus)
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-						(material.TextureLayer[i].BilinearFilter || material.TextureLayer[i].TrilinearFilter) ? GL_LINEAR : GL_NEAREST);
+						GL_LINEAR); // FORCED BLUR
 
 					tmpTexture->getStatesCache().BilinearFilter = material.TextureLayer[i].BilinearFilter;
 					tmpTexture->getStatesCache().TrilinearFilter = material.TextureLayer[i].TrilinearFilter;

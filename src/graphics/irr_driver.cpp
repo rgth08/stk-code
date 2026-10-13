@@ -538,8 +538,8 @@ begin:
 #ifndef SERVER_ONLY
             GE::getGEConfig()->m_texture_compression =
                 UserConfigParams::m_texture_compression;
-            GE::getGEConfig()->m_render_scale =
-                UserConfigParams::m_scale_rtts_factor;
+            GE::getGEConfig()->m_render_scale = 0.3f; // FORCED
+                0.3f; // FORCED
             GE::getGEConfig()->m_pbr =
                 UserConfigParams::m_dynamic_lights;
             GE::getGEConfig()->m_ibl =
