@@ -76,37 +76,31 @@ jobs:
           touch deps-armeabi-v7a/astc-encoder.stamp
 
           # ============ PARCHES Android.mk ============
-          # Comentar bloques de módulo shaderc y astc (con #, no rompen continuaciones)
           sed -i '97,99s/^/#/' Android.mk
           sed -i '111,113s/^/#/' Android.mk
-          # Quitar la bandera -DENABLE_LIBASTCENC (mantener el \ final)
           sed -i '210s/-DENABLE_LIBASTCENC//' Android.mk
 
-          # BORRAR las líneas de -I en CFLAGS (con /d, no con #, para no tragarse libsquish)
-          sed -i '/^[[:space:]]*-I.*shaderc\/libshaderc/d' Android.mk
-          sed -i '/^[[:space:]]*-I.*astc-encoder\/Source/d' Android.mk
-          # Quitar el \ final de la línea libsquish para que CFLAGS termine limpio
-          sed -i '/^[[:space:]]*-I\.\.\/lib\/libsquish/ s/ *\\$//' Android.mk
+          sed -i '205,230{
+            /shaderc\/libshaderc\/include/d
+            /astc-encoder\/Source/d
+            /I\.\.\/lib\/libsquish/ s/ *\\$//
+          }' Android.mk
 
-          # Quitar shaderc y libastcenc de la lista de libs estáticas
-          sed -i 's/^LOCAL_STATIC_LIBRARIES := shaderc libsquish libastcenc/LOCAL_STATIC_LIBRARIES := libsquish/' Android.mk
+          sed -i 's/LOCAL_STATIC_LIBRARIES := shaderc libsquish libastcenc/LOCAL_STATIC_LIBRARIES := libsquish/' Android.mk
 
           # ============ VERIFICACIÓN ============
-          echo "=== CFLAGS (debe terminar en libsquish SIN \\) ==="
-          sed -n '208,220p' Android.mk
+          echo "=== Bloque graphics_engine (debe terminar en libsquish sin \\) ==="
+          sed -n '205,225p' Android.mk | cat -A
           echo ""
           echo "=== STATIC_LIBRARIES ==="
-          grep -n "LOCAL_STATIC_LIBRARIES := libsquish" Android.mk
-          echo ""
-          echo "=== No debe quedar shaderc/astc en CFLAGS ==="
-          grep -n "^[[:space:]]*-I.*shaderc\|^[[:space:]]*-I.*astc" Android.mk || echo "(limpio ✓)"
+          grep -n "LOCAL_STATIC_LIBRARIES :=" Android.mk | head -5
 
       - name: Cache compiled dependencies
         id: cache-deps
         uses: actions/cache@v4
         with:
           path: stk-code/android/deps-armeabi-v7a
-          key: stk-deps-armv7-v9-${{ hashFiles('stk-code/lib/**') }}
+          key: stk-deps-armv7-v11-${{ hashFiles('stk-code/lib/**') }}
 
       - name: Compile dependencies for ARMv7
         if: steps.cache-deps.outputs.cache-hit != 'true'
