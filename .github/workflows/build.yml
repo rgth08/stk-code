@@ -69,38 +69,64 @@ jobs:
         working-directory: stk-code/android
         run: |
           # ============ PARCHES make_deps.sh ============
+          # curl sin libpsl
           sed -i 's/-DCURL_CA_PATH=none/-DCURL_CA_PATH=none -DCURL_USE_LIBPSL=OFF/' make_deps.sh
+          # libjpeg sin SIMD NEON
           sed -i 's|-fpic -O3 -g" &&|-fpic -O3 -g" -DWITH_SIMD=OFF \&\&|' make_deps.sh
+          # pre-crear stamps para saltar shaderc y astc-encoder
           mkdir -p deps-armeabi-v7a
           touch deps-armeabi-v7a/shaderc.stamp
           touch deps-armeabi-v7a/astc-encoder.stamp
 
           # ============ PARCHES Android.mk ============
+          # Comentar módulos shaderc (97-99) y astc-encoder (111-113)
           sed -i '97,99s/^/#/' Android.mk
           sed -i '111,113s/^/#/' Android.mk
+          # Quitar -DENABLE_LIBASTCENC manteniendo el \ final
           sed -i '210s/-DENABLE_LIBASTCENC//' Android.mk
 
+          # Limpiar bloque graphics_engine (205-230)
           sed -i '205,230{
             /shaderc\/libshaderc\/include/d
             /astc-encoder\/Source/d
             /I\.\.\/lib\/libsquish/ s/ *\\$//
           }' Android.mk
 
+          # Quitar shaderc y libastcenc de libs estáticas
           sed -i 's/LOCAL_STATIC_LIBRARIES := shaderc libsquish libastcenc/LOCAL_STATIC_LIBRARIES := libsquish/' Android.mk
 
+          # NUEVO: Excluir archivos Vulkan del wildcard de sources
+          python3 << 'PYEOF'
+          with open('Android.mk') as f:
+              content = f.read()
+
+          old = '$(wildcard ../lib/graphics_engine/src/*.cpp)'
+          new = '$(filter-out $(wildcard ../lib/graphics_engine/src/ge_vulkan_*.cpp),$(wildcard ../lib/graphics_engine/src/*.cpp))'
+          count = content.count(old)
+          content = content.replace(old, new)
+
+          with open('Android.mk', 'w') as f:
+              f.write(content)
+          print(f"Reemplazos hechos: {count}")
+          PYEOF
+
           # ============ VERIFICACIÓN ============
-          echo "=== Bloque graphics_engine (debe terminar en libsquish sin \\) ==="
-          sed -n '205,225p' Android.mk | cat -A
+          echo ""
+          echo "=== graphics_engine SRC_FILES (debe tener filter-out) ==="
+          grep -A 2 "graphics_engine/src" Android.mk | head -5
           echo ""
           echo "=== STATIC_LIBRARIES ==="
           grep -n "LOCAL_STATIC_LIBRARIES :=" Android.mk | head -5
+          echo ""
+          echo "=== stamps pre-creados ==="
+          ls -la deps-armeabi-v7a/*.stamp
 
       - name: Cache compiled dependencies
         id: cache-deps
         uses: actions/cache@v4
         with:
           path: stk-code/android/deps-armeabi-v7a
-          key: stk-deps-armv7-v11-${{ hashFiles('stk-code/lib/**') }}
+          key: stk-deps-armv7-v12-${{ hashFiles('stk-code/lib/**') }}
 
       - name: Compile dependencies for ARMv7
         if: steps.cache-deps.outputs.cache-hit != 'true'
