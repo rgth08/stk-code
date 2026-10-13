@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COMPILE_ARCH: armv7
+      BUILD_TYPE: release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,15 +66,22 @@ jobs:
           ln -sf $ANDROID_HOME $PWD/android-sdk
           ln -sf $ANDROID_HOME/ndk $PWD/android-ndk
 
-      - name: Patch build scripts (make_deps.sh + Android.mk)
+      - name: Patch build scripts
         working-directory: stk-code/android
         run: |
+          # make_deps.sh
           sed -i 's/-DCURL_CA_PATH=none/-DCURL_CA_PATH=none -DCURL_USE_LIBPSL=OFF/' make_deps.sh
           sed -i 's|-fpic -O3 -g" &&|-fpic -O3 -g" -DWITH_SIMD=OFF \&\&|' make_deps.sh
+
+          # Forzar -O3 en release (por si el script no lo hace)
+          sed -i 's/APP_CFLAGS=-O0/APP_CFLAGS=-O3/g' make.sh 2>/dev/null || true
+          grep -n "O0\|O3" make.sh | head -20
+
           mkdir -p deps-armeabi-v7a
           touch deps-armeabi-v7a/shaderc.stamp
           touch deps-armeabi-v7a/astc-encoder.stamp
 
+          # Android.mk
           sed -i '97,99s/^/#/' Android.mk
           sed -i '111,113s/^/#/' Android.mk
           sed -i '210s/-DENABLE_LIBASTCENC/-DDISABLE_SHADERC/' Android.mk
@@ -84,7 +92,7 @@ jobs:
           }' Android.mk
           sed -i 's/LOCAL_STATIC_LIBRARIES := shaderc libsquish libastcenc/LOCAL_STATIC_LIBRARIES := libsquish/' Android.mk
 
-          echo "=== Verificacion Android.mk ==="
+          echo "=== Verificacion ==="
           grep -n "DISABLE_SHADERC" Android.mk
 
       - name: Cache compiled dependencies
@@ -119,5 +127,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: stk-apk-armv7
+          name: stk-apk-armv7-release
           path: '**/*.apk'
